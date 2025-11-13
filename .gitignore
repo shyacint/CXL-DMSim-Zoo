@@ -1,4 +1,5 @@
 build
+venv
 gem5_build
 parser.out
 parsetab.py
@@ -33,11 +34,11 @@ configs/example/memcheck.cfg
 configs/dram/lowp_sweep.cfg
 .pyenv
 .vscode
-/fs_result
-/full-system-image
+/fs_images
 Doxygen.config
 /include/cxl_kvs/viper/build
 /accel_result
 typings
 include/cxl_benchmark/lmbench3
 /output
+*.tar
