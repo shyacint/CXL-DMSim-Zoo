@@ -43,7 +43,7 @@ import argparse
 import math
 import m5
 
-from pathlib import 
+from pathlib import Path
 
 from m5.objects import Terminal, TerminalFile
 from gem5.utils.requires import requires
