@@ -43,9 +43,12 @@ import argparse
 import math
 import m5
 
-from pathlib import Path
+from pathlib import 
+
+from m5.objects import Terminal, TerminalFile
 from gem5.utils.requires import requires
 from gem5.components.boards.x86_board import X86Board
+
 from gem5.components.memory.single_channel import DIMM_DDR5_4400, SingleChannelDDR4_3200
 from gem5.components.processors.simple_switchable_processor import (
     SimpleSwitchableProcessor,
@@ -120,8 +123,12 @@ board = X86Board(
     memory=memory,
     cache_hierarchy=cache_hierarchy,
     cxl_memory=cxl_memory,
-    is_asic=(args.is_asic == 'True')
+    is_asic=(args.is_asic == 'True')    
 )
+terminal = Terminal()
+terminal.output = TerminalFile(filename="console.log")
+board.serial_console.device = terminal
+
 
 # Here we set the Full System workload.
 # The `set_kernel_disk_workload` function for the X86Board takes a kernel, a
