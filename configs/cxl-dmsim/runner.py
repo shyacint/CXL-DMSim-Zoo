@@ -45,7 +45,6 @@ import m5
 
 from pathlib import Path
 
-from m5.objects import Terminal, TerminalFile
 from gem5.utils.requires import requires
 from gem5.components.boards.x86_board import X86Board
 
@@ -125,10 +124,6 @@ board = X86Board(
     cxl_memory=cxl_memory,
     is_asic=(args.is_asic == 'True')    
 )
-terminal = Terminal()
-terminal.output = TerminalFile(filename="console.log")
-board.serial_console.device = terminal
-
 
 # Here we set the Full System workload.
 # The `set_kernel_disk_workload` function for the X86Board takes a kernel, a
