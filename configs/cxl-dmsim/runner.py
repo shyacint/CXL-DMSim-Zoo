@@ -224,10 +224,10 @@ def smarts_generator(
         print("fall back to simulation\n")
         yield False
 
-program_length = 9115640 #14031765330
-N = 76000
+program_length = 14721791534
+N = 10000
 ideal_region_length = math.ceil(program_length/N)
-ideal_U = 1500000
+ideal_U = 1000
 ideal_k = math.ceil(ideal_region_length/ideal_U)
 ideal_W = 2 * ideal_U
 
