@@ -84,6 +84,8 @@ parser.add_argument('--chckpt_path', type=str, default = '.', help='path to wher
 args = parser.parse_args()
 
 print(f"\n\n{Path(args.chckpt_path).resolve()}\n\n")
+chckpt_path = Path(args.chckpt_path).resolve()
+
 
 # Here we setup a MESI Three Level Cache Hierarchy.
 cache_hierarchy = PrivateL1PrivateL2SharedL3CacheHierarchy(
