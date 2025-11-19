@@ -80,11 +80,12 @@ parser.add_argument('--test_cmd', type=str, choices=['lmbench_cxl.sh',
 parser.add_argument('--num_cpus', type=int, default=1, help='Number of CPUs')
 parser.add_argument('--cpu_type', type=str, choices=['TIMING', 'O3'], default='TIMING', help='CPU type')
 parser.add_argument('--cxl_mem_type', type=str, choices=['Simple', 'DRAM'], default='DRAM', help='CXL memory type')
-parser.add_argument('--chckpt_path', type=str, default = None, help='path to where to save checkpoint')
-args = parser.parse_args()
+parser.add_argument('--cpt_dir', type=str, default=None, help="Path to where desired checkpoint directory is locationed")
 
-print(f"\n\n{Path(args.chckpt_path).resolve()}\n\n")
-chckpt_path = Path(args.chckpt_path).resolve()
+
+args = parser.parse_args()
+cpt_dir = Path(args.cpt_dir).resolve()
+
 
 # Here we setup a MESI Three Level Cache Hierarchy.
 cache_hierarchy = PrivateL1PrivateL2SharedL3CacheHierarchy(
@@ -138,7 +139,8 @@ board = X86Board(
 # has ended you may inspect `m5out/board.pc.com_1.device` to see the echo
 # output.
 command = (
-    "m5 exit;"  
+    "m5 checkpoint;"
+    + "m5 exit;"  
     + "numactl -H;"
     + "m5 resetstats;"
     + "/home/cxl_benchmark/" + args.test_cmd + ";"
@@ -149,11 +151,108 @@ board.set_kernel_disk_workload(
     kernel=KernelResource(local_path='/mnt/ssd/CXL-DMSim-Zoo/fs_images/vmlinux_20240920'),
     disk_image=DiskImageResource(local_path='/mnt/ssd/CXL-DMSim-Zoo/fs_images/parsec.img'),
     readfile_contents=command,
+    checkpoint=cpt_dir,
 )
+
+def smarts_generator(
+    k: int, U: int, W: int, processor
+):
+    """
+        :param k: the systematic sampling interval. Each interval simulation k*U
+        instructions. The interval includes the fast-forwarding part, detailed
+        warmup part, and the detail simulation part.
+        :param U: sampling unit size. The instruction length in each unit.
+        :param W: the length of the detailed warmup part.
+
+        Each interval instruction length is k*U.
+        The warmup part starts at (k-1)*U-W
+        The detailed simulation part starts at (k-1)*U
+
+        This exit generator only works with SwitchableProcessor.
+        When it reaches to the start of the detailed warmup part, it resets the
+        stats; then it switches the core type and schedule for the end of the
+        warmup part and the end of the interval. When it reaches to the end of the
+        detailed warmup part, it resets the stats. When it reaches to the end of
+        the detailed simulation, it dumps the stats; then it switches the core type
+        and schedule for the start of the next detailed warmup part.
+    """
+    is_switchable = isinstance(processor, SimpleSwitchableProcessor)
+    warmup_start = U * (k - 1) - W
+    warmup_plus_detailed = U + W
+    counter = 0
+
+    while is_switchable:
+        print(f"curTick is {m5.curTick()}")
+        print("got to warmup start\n")
+
+        print("switch core type")
+        # switch core type
+        processor.switch()
+        print(
+            "now schedule for end of warmup and start of detailed simluation\n"
+        )
+        # schedule for warmup end
+        # schedule for detailed simulation end
+        processor.get_cores()[0]._set_simpoint([W, warmup_plus_detailed], True)
+        print("fall back to simulation\n")
+        # fall back to simualtion
+        yield False
+
+        # reached warmup end
+        print(f"curTick is {m5.curTick()}")
+        print("got to detail simulation start\n")
+        print("now reset m5 stats\n")
+
+        # reset stats
+        m5.stats.reset()
+        print("fall back to simulation\n")
+        # fall back to simulation
+        yield False
+
+        # reached end of detailed simulation
+        print(f"curTick is {m5.curTick()}")
+        print("got to end of detail simulation\n")
+        print("now dump stats\n")
+        # dump stats
+        m5.stats.dump()
+
+        # switch core type
+        print("switch core type\n")
+        processor.switch()
+        print(
+            "now schedule for next warmup start and detail simulation start\n"
+        )
+        # schedule for the next start of warmup
+        print("schedule for the next start of warmup\n")
+        processor.get_cores()[0]._set_simpoint([warmup_start], True)
+        print("increase n counter\n")
+        # increment sample counter
+        counter += 1
+        print("switch core type to functional core type")
+        print("fall back to simulation\n")
+        yield False
+
+program_length = 14721791534
+N = 10000
+ideal_region_length = math.ceil(program_length/N)
+ideal_U = 1000
+ideal_k = math.ceil(ideal_region_length/ideal_U)
+ideal_W = 2 * ideal_U
 
 simulator = Simulator(
     board=board,
+    on_exit_event={
+        ExitEvent.SIMPOINT_BEGIN: smarts_generator(
+            k=ideal_k,
+            U=ideal_U,
+            W=ideal_W,
+            processor=processor,
+        )
+    }
 )
+
+m5.stats.reset()
+processor.get_cores()[0]._set_simpoint([1], False)
 simulator.run()
-simulator.save_checkpoint(chckpt_path)
+
 print("Simulation Complete")
