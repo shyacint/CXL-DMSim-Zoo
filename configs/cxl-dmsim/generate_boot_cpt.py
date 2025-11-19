@@ -80,11 +80,7 @@ parser.add_argument('--test_cmd', type=str, choices=['lmbench_cxl.sh',
 parser.add_argument('--num_cpus', type=int, default=1, help='Number of CPUs')
 parser.add_argument('--cpu_type', type=str, choices=['TIMING', 'O3'], default='TIMING', help='CPU type')
 parser.add_argument('--cxl_mem_type', type=str, choices=['Simple', 'DRAM'], default='DRAM', help='CXL memory type')
-parser.add_argument('--cpt_path', type=str, default = None, help='path to where to save checkpoint')
 args = parser.parse_args()
-
-print(f"\n\n{Path(args.cpt_path).resolve()}\n\n")
-cpt_path = Path(args.cpt_path).resolve()
 
 # Here we setup a MESI Three Level Cache Hierarchy.
 cache_hierarchy = PrivateL1PrivateL2SharedL3CacheHierarchy(
