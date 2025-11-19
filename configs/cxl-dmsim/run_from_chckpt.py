@@ -85,7 +85,7 @@ parser.add_argument('--save_chckpt', type=str, default=None, help="Path to where
 
 args = parser.parse_args()
 
-checkpoint_path = Path(args.chckpt).resolve()
+checkpoint_path = Path(args.save_chckpt).resolve()
 
 
 # Here we setup a MESI Three Level Cache Hierarchy.

@@ -80,12 +80,11 @@ parser.add_argument('--test_cmd', type=str, choices=['lmbench_cxl.sh',
 parser.add_argument('--num_cpus', type=int, default=1, help='Number of CPUs')
 parser.add_argument('--cpu_type', type=str, choices=['TIMING', 'O3'], default='TIMING', help='CPU type')
 parser.add_argument('--cxl_mem_type', type=str, choices=['Simple', 'DRAM'], default='DRAM', help='CXL memory type')
-parser.add_argument('--chckpt_path', type=str, default = '.', help='path to where to save checkpoint')
+parser.add_argument('--chckpt_path', type=str, default = None, help='path to where to save checkpoint')
 args = parser.parse_args()
 
 print(f"\n\n{Path(args.chckpt_path).resolve()}\n\n")
 chckpt_path = Path(args.chckpt_path).resolve()
-
 
 # Here we setup a MESI Three Level Cache Hierarchy.
 cache_hierarchy = PrivateL1PrivateL2SharedL3CacheHierarchy(
@@ -156,5 +155,5 @@ simulator = Simulator(
     board=board,
 )
 simulator.run()
-simulator.save_checkpoint(Path(chckpt_path))
+simulator.save_checkpoint(chckpt_path)
 print("Simulation Complete")
